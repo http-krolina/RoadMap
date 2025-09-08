@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Roadmap Interativo - App de Campo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A dashboard-style, single-page application was designed to transform the static feature list into an engaging, explorable roadmap. The structure includes: 1) A header with key metrics for an immediate overview. 2) Interactive filters by development phase (M1, M2, Futuro) for user-driven exploration. 3) A central chart to visually represent the distribution of work across phases. 4) A responsive card grid to display detailed feature information. This structure was chosen because it organizes information thematically, allowing stakeholders to quickly grasp the project's scope and progress at different granularities, which is more effective than a simple linear document. -->
+    <!-- Visualization & Content Choices: 
+        - Key Metrics (Total, M1, M2, etc.): Goal=Inform. Method=Dynamic text blocks. Interaction=Updates on filter selection. Justification=Provides a quick, high-level summary of the project's scope.
+        - Feature Distribution Chart: Goal=Compare Proportions. Method=Donut Chart (Chart.js/Canvas). Interaction=Hover tooltips show feature counts per phase. Justification=Offers an immediate visual breakdown of development effort across phases.
+        - Feature Cards: Goal=Organize & Detail. Method=HTML/CSS card layout. Interaction=Cards are dynamically shown/hidden based on the active phase filter. Justification=Presents detailed information for each feature in a digestible format and allows users to focus on specific delivery milestones.
+        - Icons: Goal=Visual Cue. Method=Unicode characters. Justification=Provides quick visual identification of a feature's core concept without relying on external image or SVG files.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+      body {
+        font-family: "Inter", sans-serif;
+      }
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+      .chart-container {
+        position: relative;
+        width: 100%;
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+        height: 300px;
+        max-height: 400px;
+      }
+      @media (min-width: 768px) {
+        .chart-container {
+          height: 350px;
+        }
+      }
+      .feature-card {
+        transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+      }
+      .hidden-card {
+        opacity: 0;
+        transform: scale(0.95);
+        display: none;
+      }
+    </style>
+  </head>
+  <body class="bg-stone-50 text-stone-800">
+    <div class="container mx-auto p-4 md:p-8">
+      <header class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-stone-900">Roadmap Interativo</h1>
+        <p class="text-lg text-stone-600 mt-2">
+          App de Campo: Funcionalidades e Fases de Implementação
+        </p>
+      </header>
+
+      <main>
+        <!-- Seção de Métricas e Visão Geral -->
+        <section
+          id="overview"
+          class="mb-10 p-6 bg-white rounded-2xl shadow-sm border border-stone-200"
+        >
+          <h2 class="text-2xl font-semibold text-stone-800 mb-4 text-center">
+            Visão Geral do Projeto
+          </h2>
+          <p class="text-center text-stone-600 mb-6">
+            Esta seção resume a distribuição das funcionalidades planejadas para
+            o aplicativo. Utilize o gráfico para entender a proporção de
+            trabalho em cada fase e os cartões abaixo para ver o total de
+            funcionalidades.
+          </p>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+            <div class="chart-container">
+              <canvas id="featuresChart"></canvas>
+            </div>
+            <div class="grid grid-cols-2 gap-4 text-center">
+              <div class="bg-stone-100 p-4 rounded-lg">
+                <h3 class="text-3xl font-bold text-sky-600" id="total-features">
+                  17
+                </h3>
+                <p class="text-sm text-stone-500">Total de Features</p>
+              </div>
+              <div class="bg-stone-100 p-4 rounded-lg">
+                <h3
+                  class="text-3xl font-bold text-emerald-600"
+                  id="m1-features"
+                >
+                  9
+                </h3>
+                <p class="text-sm text-stone-500">Fase M1</p>
+              </div>
+              <div class="bg-stone-100 p-4 rounded-lg">
+                <h3 class="text-3xl font-bold text-amber-600" id="m2-features">
+                  6
+                </h3>
+                <p class="text-sm text-stone-500">Fase M2</p>
+              </div>
+              <div class="bg-stone-100 p-4 rounded-lg">
+                <h3
+                  class="text-3xl font-bold text-slate-600"
+                  id="future-features"
+                >
+                  2
+                </h3>
+                <p class="text-sm text-stone-500">Futuro</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Seção de Filtros e Funcionalidades -->
+        <section id="features-list">
+          <div class="text-center mb-8">
+            <h2 class="text-2xl font-semibold text-stone-800 mb-4">
+              Explore as Funcionalidades
+            </h2>
+            <p class="text-center text-stone-600 mb-6 max-w-3xl mx-auto">
+              Navegue pelas funcionalidades planejadas. Use os botões abaixo
+              para filtrar os itens de acordo com a fase de desenvolvimento.
+              Cada cartão contém a descrição e os critérios de aceitação da
+              funcionalidade.
+            </p>
+            <div id="filters" class="flex flex-wrap justify-center gap-2">
+              <button
+                data-filter="all"
+                class="filter-btn bg-sky-600 text-white py-2 px-5 rounded-full font-semibold shadow-sm"
+              >
+                Todos
+              </button>
+              <button
+                data-filter="M1"
+                class="filter-btn bg-white text-stone-700 py-2 px-5 rounded-full font-semibold border border-stone-300"
+              >
+                Fase M1
+              </button>
+              <button
+                data-filter="M2"
+                class="filter-btn bg-white text-stone-700 py-2 px-5 rounded-full font-semibold border border-stone-300"
+              >
+                Fase M2
+              </button>
+              <button
+                data-filter="Futuro"
+                class="filter-btn bg-white text-stone-700 py-2 px-5 rounded-full font-semibold border border-stone-300"
+              >
+                Futuro
+              </button>
+            </div>
+          </div>
+
+          <div
+            id="features-grid"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            <!-- Cards de funcionalidades serão inseridos aqui pelo JavaScript -->
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const featuresData = [
+        {
+          id: "F-01",
+          phase: "M1",
+          title: "Autenticação & Perfis",
+          icon: "👤",
+          description:
+            "Login com credenciais institucionais; bloqueio por tentativas; logout.",
+          acceptance:
+            "Dado usuário válido → quando faz login → então acessa app com perfil correto e permissões aplicadas.",
+        },
+        {
+          id: "F-02",
+          phase: "M1",
+          title: "Registro de Ocorrência",
+          icon: "📝",
+          description:
+            "Form com campos obrigatórios (tipo, data/hora, viatura, equipe, descrição) e opcionais.",
+          acceptance:
+            "Dado formulário completo → quando salvar → então registro é criado localmente (offline) ou no servidor (online).",
+        },
+        {
+          id: "F-03",
+          phase: "M1",
+          title: "Modo Offline",
+          icon: "☁️",
+          description:
+            "Armazenar ocorrências localmente e sincronizar quando voltar a conexão.",
+          acceptance:
+            "Dada ausência de rede → quando registrar → então salva local; quando rede volta → então sincroniza automaticamente.",
+        },
+        {
+          id: "F-04",
+          phase: "M1",
+          title: "Captura GPS",
+          icon: "📍",
+          description: "Obter coordenadas, precisão, carimbo de data/hora.",
+          acceptance:
+            "Dado dispositivo com GPS → quando abrir formulário → então coordenadas são registradas e anexadas ao evento.",
+        },
+        {
+          id: "F-05",
+          phase: "M1",
+          title: "Captura de Foto",
+          icon: "📷",
+          description:
+            "Tirar foto a partir do app, com compressão e metadados.",
+          acceptance:
+            "Dado clique em “Adicionar foto” → quando fotografar → então imagem é anexada ao registro com hash e horário.",
+        },
+        {
+          id: "F-06",
+          phase: "M1",
+          title: "Assinatura Digital",
+          icon: "✍️",
+          description: "Coleta de assinatura na tela; vincular ao registro.",
+          acceptance:
+            "Dado campo de assinatura → quando coletar → então imagem da assinatura é salva e referenciada no caso.",
+        },
+        {
+          id: "F-07",
+          phase: "M1",
+          title: "Validações de Formulário",
+          icon: "✔️",
+          description:
+            "Campos obrigatórios, mascaras (CPF/telefone), ranges e formatos.",
+          acceptance:
+            "Dado campo obrigatório vazio → quando salvar → então o app impede envio e exibe mensagem clara.",
+        },
+        {
+          id: "F-08",
+          phase: "M1",
+          title: "Lista de Ocorrências",
+          icon: "📋",
+          description:
+            "Tela listando ocorrências do usuário; status (sincronizado/pendente).",
+          acceptance:
+            "Dado usuário logado → quando abrir lista → então visualiza registros e seus estados.",
+        },
+        {
+          id: "F-09",
+          phase: "M1",
+          title: "Edição Antes do Envio",
+          icon: "✏️",
+          description: "Permitir editar registros pendentes de sincronização.",
+          acceptance:
+            "Dado registro pendente → quando editar e salvar → então atualização persiste e será enviada no próximo sync.",
+        },
+        {
+          id: "F-10",
+          phase: "M2",
+          title: "Captura de Vídeo",
+          icon: "📹",
+          description: "Gravação curta com compressão e limite de tamanho.",
+          acceptance:
+            "Dado botão “vídeo” → quando gravar → então arquivo é anexado e validado por tamanho/mimetype.",
+        },
+        {
+          id: "F-11",
+          phase: "M2",
+          title: "Sincronização com Resolução de Conflitos",
+          icon: "🔄",
+          description:
+            "Estratégia last-write-wins + log; alerta ao usuário em conflitos.",
+          acceptance:
+            "Dado mesmo registro alterado em 2 lugares → quando sincronizar → então conflito é detectado e resolvido segundo a política.",
+        },
+        {
+          id: "F-12",
+          phase: "M2",
+          title: "Linha do Tempo da Ocorrência",
+          icon: "⏳",
+          description:
+            "Eventos (criação, anexos, status, sincronizações) em ordem cronológica.",
+          acceptance:
+            "Dado um registro → quando abrir timeline → então exibe eventos com data/hora e autor.",
+        },
+        {
+          id: "F-13",
+          phase: "M2",
+          title: "Mapa In-App",
+          icon: "🗺️",
+          description:
+            "Visualização em mapa das ocorrências do turno do usuário.",
+          acceptance:
+            "Dado acesso à tela mapa → quando carregar → então exibe pins com filtro por status/data.",
+        },
+        {
+          id: "F-14",
+          phase: "M2",
+          title: "Push Notifications",
+          icon: "🔔",
+          description: "Notificar nova atribuição/alteração de status.",
+          acceptance:
+            "Dado perfil operacional → quando chefe atribuir ocorrência → então push é recebido no dispositivo.",
+        },
+        {
+          id: "F-15",
+          phase: "M2",
+          title: "Acessibilidade",
+          icon: "♿",
+          description:
+            "Alto contraste, fontes escaláveis, leitura por voz (OS), foco adequado.",
+          acceptance:
+            "Dado usuário com ajustes de acessibilidade → quando usar app → então a interface respeita preferências do sistema.",
+        },
+        {
+          id: "F-16",
+          phase: "Futuro",
+          title: "Modo Treinamento",
+          icon: "🎓",
+          description: "Ambiente simulado para capacitação sem dados reais.",
+          acceptance:
+            "Dado modo sandbox → quando registrar → então dados não entram na base produtiva.",
+        },
+        {
+          id: "F-17",
+          phase: "Futuro",
+          title: "Escaneio de QR/Barcodes",
+          icon: "🇶",
+          description: "Vincular recursos/equipamentos à ocorrência.",
+          acceptance:
+            "Dado QR code válido → quando escanear → então equipamento é associado ao registro.",
+        },
+      ];
+
+      const phaseColors = {
+        M1: "#0ea5e9", // sky-500
+        M2: "#f59e0b", // amber-500
+        Futuro: "#64748b", // slate-500
+      };
+
+      const phaseBorderColors = {
+        M1: "border-sky-500",
+        M2: "border-amber-500",
+        Futuro: "border-slate-500",
+      };
+
+      document.addEventListener("DOMContentLoaded", () => {
+        const featuresGrid = document.getElementById("features-grid");
+        const filterButtons = document.querySelectorAll(".filter-btn");
+
+        function renderFeatures(filter = "all") {
+          featuresGrid.innerHTML = "";
+          const filteredData =
+            filter === "all"
+              ? featuresData
+              : featuresData.filter((f) => f.phase === filter);
+
+          filteredData.forEach((feature) => {
+            const card = document.createElement("div");
+            card.className = `feature-card bg-white p-6 rounded-2xl shadow-sm border-t-4 ${
+              phaseBorderColors[feature.phase]
+            } flex flex-col`;
+            card.dataset.phase = feature.phase;
+
+            card.innerHTML = `
+                        <div class="flex-grow">
+                            <div class="flex items-start justify-between mb-3">
+                                <span class="text-2xl">${feature.icon}</span>
+                                <span class="text-xs font-bold uppercase tracking-wider text-white px-2 py-1 rounded-full" style="background-color: ${
+                                  phaseColors[feature.phase]
+                                }">${feature.phase}</span>
+                            </div>
+                            <h3 class="text-lg font-bold text-stone-800 mb-2">${
+                              feature.id
+                            } | ${feature.title}</h3>
+                            <p class="text-sm text-stone-600 mb-4">${
+                              feature.description
+                            }</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-stone-500 bg-stone-100 p-2 rounded-md"><span class="font-semibold">Aceitação:</span> ${
+                              feature.acceptance
+                            }</p>
+                        </div>
+                    `;
+            featuresGrid.appendChild(card);
+          });
+        }
+
+        function updateActiveButton(activeFilter) {
+          filterButtons.forEach((button) => {
+            if (button.dataset.filter === activeFilter) {
+              button.classList.remove(
+                "bg-white",
+                "text-stone-700",
+                "border",
+                "border-stone-300"
+              );
+              button.classList.add("bg-sky-600", "text-white");
+            } else {
+              button.classList.remove("bg-sky-600", "text-white");
+              button.classList.add(
+                "bg-white",
+                "text-stone-700",
+                "border",
+                "border-stone-300"
+              );
+            }
+          });
+        }
+
+        filterButtons.forEach((button) => {
+          button.addEventListener("click", () => {
+            const filter = button.dataset.filter;
+            renderFeatures(filter);
+            updateActiveButton(filter);
+          });
+        });
+
+        function renderChart() {
+          const ctx = document.getElementById("featuresChart").getContext("2d");
+          const phaseCounts = featuresData.reduce((acc, feature) => {
+            acc[feature.phase] = (acc[feature.phase] || 0) + 1;
+            return acc;
+          }, {});
+
+          new Chart(ctx, {
+            type: "doughnut",
+            data: {
+              labels: Object.keys(phaseCounts),
+              datasets: [
+                {
+                  label: "Features por Fase",
+                  data: Object.values(phaseCounts),
+                  backgroundColor: [
+                    phaseColors["M1"],
+                    phaseColors["M2"],
+                    phaseColors["Futuro"],
+                  ],
+                  borderColor: "#f8fafc",
+                  borderWidth: 4,
+                },
+              ],
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: "70%",
+              plugins: {
+                legend: {
+                  position: "bottom",
+                  labels: {
+                    padding: 20,
+                    font: {
+                      size: 14,
+                      family: "Inter",
+                    },
+                  },
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function (context) {
+                      let label = context.label || "";
+                      if (label) {
+                        label += ": ";
+                      }
+                      if (context.parsed !== null) {
+                        label += context.parsed + " funcionalidades";
+                      }
+                      return label;
+                    },
+                  },
+                },
+              },
+            },
+          });
+        }
+
+        renderFeatures();
+        renderChart();
+      });
+    </script>
+  </body>
+</html>
